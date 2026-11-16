@@ -100,6 +100,11 @@ export class GameEngine {
   private onGameOver?: () => void;
   private onEnemyCountChange?: (count: number) => void;
 
+  // Bound handlers
+  private boundResize = () => {};
+  private boundKeydown = (_e: KeyboardEvent) => {};
+  private boundKeyup = (_e: KeyboardEvent) => {};
+
   constructor(container: HTMLElement) {
     this.container = container;
     this.scene = new THREE.Scene();
@@ -132,7 +137,8 @@ export class GameEngine {
     this.spawnInitialEnemies();
     this.setupInput();
 
-    window.addEventListener('resize', this.onResize.bind(this));
+    this.boundResize = this.onResize.bind(this);
+    window.addEventListener('resize', this.boundResize);
   }
 
   setCallbacks(callbacks: {
@@ -431,16 +437,18 @@ export class GameEngine {
   }
 
   private setupInput() {
-    window.addEventListener('keydown', (e) => {
+    this.boundKeydown = (e: KeyboardEvent) => {
       this.keys.add(e.key.toLowerCase());
       if (e.key === ' ' || e.key === 'Enter') {
         e.preventDefault();
         this.playerShoot();
       }
-    });
-    window.addEventListener('keyup', (e) => {
+    };
+    this.boundKeyup = (e: KeyboardEvent) => {
       this.keys.delete(e.key.toLowerCase());
-    });
+    };
+    window.addEventListener('keydown', this.boundKeydown);
+    window.addEventListener('keyup', this.boundKeyup);
   }
 
   private playerShoot() {
@@ -921,7 +929,9 @@ export class GameEngine {
 
   dispose() {
     this.running = false;
-    window.removeEventListener('resize', this.onResize.bind(this));
+    window.removeEventListener('resize', this.boundResize);
+    window.removeEventListener('keydown', this.boundKeydown);
+    window.removeEventListener('keyup', this.boundKeyup);
     this.renderer.dispose();
     if (this.renderer.domElement.parentElement) {
       this.renderer.domElement.parentElement.removeChild(this.renderer.domElement);
